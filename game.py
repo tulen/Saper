@@ -34,7 +34,7 @@ class MineSweeper:
     window = tk.Tk()
     row = 7
     columns = 10
-    mines = 10
+    mines = 3
     is_game_over = False
     is_first_click = True
     window.title('MineSweeper')
@@ -53,6 +53,28 @@ class MineSweeper:
 
             self.buttons.append(temp)
 
+            self.flags = 0  # Инициализируем счетчик флажков
+
+            # Создаем фрейм для счетчиков мин и флажков
+            self.bottom_frame = tk.Frame(self.window)
+            self.bottom_frame.grid(row=MineSweeper.row + 2, columnspan=MineSweeper.columns + 2)
+
+            # Метка "Мины"
+            self.mines_label = tk.Label(self.bottom_frame, text="Мины:")
+            self.mines_label.grid(row=0, column=0)
+
+            # Метка для отображения количества мин
+            self.mines_count_label = tk.Label(self.bottom_frame, text=MineSweeper.mines)
+            self.mines_count_label.grid(row=0, column=1)
+
+            # Метка "Флажки"
+            self.flags_label = tk.Label(self.bottom_frame, text="Флажки:")
+            self.flags_label.grid(row=0, column=2)
+
+            # Метка для отображения количества флажков
+            self.flags_count_label = tk.Label(self.bottom_frame, text="0")
+            self.flags_count_label.grid(row=0, column=3)
+
     def right_click(self, event):
         if MineSweeper.is_game_over:
             return
@@ -61,9 +83,21 @@ class MineSweeper:
             cur_btn['state'] = 'disabled'
             cur_btn['text'] = '🚩'
             cur_btn['disabledforeground'] = 'red'
+            self.flags += 1  # Увеличиваем счетчик флажков у текущего экземпляра MineSweeper
+            self.flags_count_label.config(text=str(self.flags))  # Обновляем отображение количества флажков
         elif cur_btn['text'] == '🚩':
             cur_btn['text'] = ''
             cur_btn['state'] = 'normal'
+            self.flags -= 1  # Уменьшаем счетчик флажков у текущего экземпляра MineSweeper
+            self.flags_count_label.config(text=str(self.flags))  # Обновляем отображение количества флажков
+
+    def check_win(self):
+        safe_cells_count = (MineSweeper.row * MineSweeper.columns) - MineSweeper.mines
+        opened_safe_cells = sum(1 for i in range(1, MineSweeper.row + 1) for j in range(1, MineSweeper.columns + 1) if
+                                self.buttons[i][j].is_open and not self.buttons[i][j].is_mine)
+        if safe_cells_count == opened_safe_cells:
+            showinfo('ПОБЕДА!', 'Поздравляем, вы победили!')
+            MineSweeper.is_game_over = True
     def click(self, clicked_bt: MyButton):  # что будет делать программа если кнопка мина или не мина
 
         if MineSweeper.is_game_over:
@@ -96,6 +130,9 @@ class MineSweeper:
         clicked_bt.config(state='disabled')  # чтобы кнопка нажималась один раз
         clicked_bt.config(relief=tk.SUNKEN)
 
+        if not MineSweeper.is_game_over:
+            self.check_win()
+
     def breadth_search(self, btn: MyButton): #чтобы пустые места открывались сразу
         queue = [btn] #очередь из кнопок
         while queue:
@@ -120,6 +157,7 @@ class MineSweeper:
                         if not next_btn.is_open and 1<= next_btn.x<=MineSweeper.row and \
                                 1<= next_btn.y<=MineSweeper.columns and next_btn not in queue:
                             queue.append(next_btn)
+                self.check_win()
 
     def reload(self):
         [child.destroy() for child in self.window.winfo_children()]
@@ -127,6 +165,9 @@ class MineSweeper:
         self.creat_wdg()
         MineSweeper.is_first_click = True
         MineSweeper.is_game_over = False
+        MineSweeper.flags = 0  # Обнуляем количество флажков
+        self.flags_count_label.config(text=str(MineSweeper.flags))  # Обновляем отображение количества флажков
+        self.mines_count_label.config(text=str(MineSweeper.mines))  # Обновляем отображение количества мин
 
     def create_settings(self):
         win_settings = tk.Toplevel(self.window)
